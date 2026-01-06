@@ -33,9 +33,7 @@ setup(
 
         # Visualization
         "wis3d",
-        "pyrender",
         "trimesh",
-        "pytorch3d",
         "opencv-python",
         "imageio",
         "imageio-ffmpeg",
@@ -51,6 +49,13 @@ setup(
         # Optional but recommended for video loading
         "decord",
     ],
-    extras_require={},
+    extras_require={
+        "pytorch3d": [
+            "pytorch3d",
+        ],
+        'pyrender': [
+            "pyrender",
+        ],
+    },
 )
 
