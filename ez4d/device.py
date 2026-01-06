@@ -10,7 +10,7 @@ def recursive_to(x: Any, target: torch.device):
     ### Args
     - x: Any
     - target: torch.device
-    
+
     ### Returns
     - Data transferred to the target device.
     """

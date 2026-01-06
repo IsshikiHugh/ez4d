@@ -1,4 +1,6 @@
-# Provides methods to summarize the information of data, giving a brief overview in text.
+"""
+Provides methods to summarize the information of data, giving a brief overview in text.
+"""
 
 import torch
 import numpy as np

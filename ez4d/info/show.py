@@ -1,4 +1,6 @@
-# Provides methods to visualize the information of data, giving a brief overview in figure.
+"""
+Provides methods to visualize the information of data, giving a brief overview in figure.
+"""
 
 import torch
 import numpy as np
