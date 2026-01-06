@@ -5,7 +5,7 @@ import torch
 from typing import Union, Tuple
 from pathlib import Path
 from ..data import to_numpy
-from ..info.vis import ColorPalette
+from ..vis import ColorPalette
 
 
 def annotate_img(
