@@ -1,4 +1,4 @@
-# Eazy4D
+# EZ4D
 
 This is a collection of (lightweight) tools for 4DV research. (**WIP**)
 
