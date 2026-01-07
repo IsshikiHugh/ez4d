@@ -4,10 +4,42 @@ It defines the topology of the skeleton and the visualization (color) symbols.
 """
 
 class Skeleton():
+    # Any topology related.s
     bones = []
     bone_colors = []
+    # Tree topology related.
+    root_idx = None
     chains = []
     parent = []
+
+
+class Skeleton_COCO17(Skeleton):
+    bones = [
+            [ 0,  1], [ 0,  2], [ 1,  2],  # face triangle (nose & eyes)
+            [ 1,  3], [ 3,  5],            # left head (ears to shoulders)
+            [ 2,  4], [ 4,  6],            # right head (ears to shoulders)
+            [ 5,  6],                      # neck (horizontal bone)
+            [ 5,  7], [ 7,  9],            # left arm
+            [ 6,  8], [ 8, 10],            # right arm
+            [11, 12],                      # hip (horizontal bone)
+            [ 5, 11], [11, 13], [13, 15],  # left leg
+            [ 6, 12], [12, 14], [14, 16],  # right leg
+        ]
+    bone_colors = [
+            [  0,   0, 127], [  0,   0, 127], [  0,   0, 127],   # blue
+            [  0,   0, 127], [  0,   0, 127],                    # blue
+            [  0,   0, 127], [  0,   0, 127],                    # blue
+            [  0,   0, 127],                                     # blue
+            [  0, 127, 127], [  0, 127, 127],                    # cyan
+            [127,   0, 127], [127,   0, 127],                    # magenta
+            [  0,   0, 127],                                     # blue
+            [127,   0,   0], [127,   0,   0], [127,   0,   0],   # red
+            [  0, 127,   0], [  0, 127,   0], [  0, 127,   0],   # green
+        ]
+
+    root_idx = None  # invalid for none-tree skeletons
+    root_idx = None  # invalid for nontree skeletons
+    parent   = None  # invalid for nontree skeletons
 
 
 class Skeleton_SMPL24(Skeleton):
