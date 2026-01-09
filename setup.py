@@ -45,9 +45,6 @@ setup(
         "einops",
         "colorlog",
         "rich",
-
-        # Optional but recommended for video loading
-        "decord",
     ],
     extras_require={
         "pytorch3d": [
@@ -55,6 +52,10 @@ setup(
         ],
         'pyrender': [
             "pyrender",
+        ],
+        # Decord might not be available on all platforms.
+        "decord": [
+            "decord",
         ],
     },
 )
