@@ -1,4 +1,4 @@
-# EZ4D
+# [EZ4D](https://github.com/IsshikiHugh/ez4d)
 
 This is a collection of (lightweight) tools for 4DV research. (**WIP**)
 
