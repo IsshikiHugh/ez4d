@@ -29,9 +29,9 @@ def load_img(
     img = imageio.v3.imread(img_path, plugin='pillow', mode=mode)
 
     meta = {
-        'w': img.shape[1],
-        'h': img.shape[0],
-    }
+            'w': img.shape[1],
+            'h': img.shape[0],
+        }
     return img, meta
 
 
@@ -57,7 +57,11 @@ def load_video(
     silent     : bool = False,
     use_decord : bool = True,
 ):
-    """ Read the video from the given path. """
+    """
+    Read the video from the given path.
+    These functions are only suggested for quick usage / small scale video processing.
+    For larger scale purposes, please use `EZVideoReader` and `EZVideoWriter`.
+    """
     if isinstance(video_path, str):
         video_path = Path(video_path)
 
@@ -84,20 +88,13 @@ def load_video(
             # decord: https://github.com/dmlc/decord
             try:
                 import decord
-                # # Check available bridges safely
-                # valid_bridges = list(decord.bridge._BRIDGE_TYPES.keys())
-                # if 'numpy' in valid_bridges:
-                #     decord.bridge.set_bridge('numpy')
-                # else:
-                #     if not silent:
-                #         print(f"⚠️ 'numpy' bridge not found in Decord ({valid_bridges}). Using default bridge.")
                 vr = decord.VideoReader(str(video_path))
                 total_L = len(vr)
                 sid = 0 if sid is None else max(sid, 0)
                 eid = total_L if eid is None else min(eid, total_L)
                 frame_indices = list(range(sid, eid))
                 frames = vr.get_batch(frame_indices)
-                # Convert to numpy if not already
+                # Convert to numpy if not already.
                 if not isinstance(frames, np.ndarray):
                     frames = frames.asnumpy()
                 fps = float(vr.get_avg_fps())
@@ -140,7 +137,10 @@ def save_video(
     quality      : Union[int, None]   = None,
     silent       : bool = False
 ):
-    """ Save the frames as a video. """
+    """ 
+    Save the frames as a video. 
+    These functions are only suggested for quick usage / small scale video processing.
+    For larger scale purposes, please use `EZVideoReader` and `EZVideoWriter`."""
     if isinstance(frames, List):
         frames = np.stack(frames, axis=0)
     assert frames.ndim == 4, f'Invalid frames shape: {frames.shape}'
