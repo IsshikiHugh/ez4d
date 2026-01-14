@@ -47,12 +47,13 @@ def apply_Ts_on_pts(Ts:torch.Tensor, pts:torch.Tensor) -> torch.Tensor:
     - Ts: torch.Tensor, (...B, 4, 4)
     - pts: torch.Tensor, (...B, N, 3)
     """
-
     assert len(pts.shape) >= 3 and pts.shape[-1] == 3, f'Shape of pts should be (...B, N, 3) but {pts.shape}'
     assert Ts.shape[-2:] == (4, 4), f'Shape of Ts should be (..., 4, 4) but {Ts.shape}'
     assert Ts.device == pts.device, f'Device of Ts and pts should be the same but {Ts.device} != {pts.device}'
 
-    ret_pts = torch.einsum('...ij,...nj->...ni', Ts[..., :3, :3], pts) + Ts[..., :3, 3]
+    R = Ts[..., :3, :3]  # (...B, 3, 3)
+    t = Ts[..., :3, 3]   # (...B, 3)
+    ret_pts = torch.einsum('...ij,...nj->...ni', R, pts) + t[..., None, :]
 
     return ret_pts
 
@@ -65,6 +66,7 @@ def apply_T_on_pts(T:torch.Tensor, pts:torch.Tensor) -> torch.Tensor:
     - T: torch.Tensor, (4, 4)
     - pts: torch.Tensor, (B, N, 3) or (N, 3)
     """
+    assert len(T.shape) == 2 and T.shape[-2:] == (4, 4), f'Shape of T should be (4, 4) but {T.shape}'
     unbatched = len(pts.shape) == 2
     if unbatched:
         pts = pts[None]
