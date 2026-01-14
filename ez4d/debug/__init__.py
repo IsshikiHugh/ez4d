@@ -4,6 +4,7 @@ Debug utilities for fast debugging mainly in CLI situations.
 import ez4d.debug as edb
 """
 
+from tqdm import tqdm
 from ipdb import set_trace
 bp = set_trace  # shortcut for set_trace
 
