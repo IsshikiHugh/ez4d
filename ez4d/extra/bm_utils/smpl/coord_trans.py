@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from ez4d.camera import Rt_to_T, T_to_Rt, apply_Ts_on_pts
 
 
-def apply_T_on_params(
+def apply_Ts_on_params(
     global_orient : torch.Tensor,
     body_pose     : torch.Tensor,
     transl        : torch.Tensor,

@@ -1,1 +1,1 @@
-from .coord_trans import apply_T_on_params
+from .coord_trans import apply_Ts_on_params
