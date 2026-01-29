@@ -74,10 +74,11 @@ class HWis3D(Wis3D):
 
     def add_motion_mesh(
         self,
-        verts : Union[torch.Tensor, np.ndarray],
-        faces : Union[torch.Tensor, np.ndarray],
-        name  : str,
-        offset: int = 0,
+        verts  : Union[torch.Tensor, np.ndarray],
+        faces  : Union[torch.Tensor, np.ndarray],
+        colors : Union[torch.Tensor, np.ndarray],
+        name   : str,
+        offset : int = 0,
     ):
         """
         Add sequence of vertices and face(s) to the wis3d viewer.
@@ -85,6 +86,8 @@ class HWis3D(Wis3D):
         ### Args
         - verts: torch.Tensor or np.ndarray, (L, V, 3), L ~ sequence length, V ~ number of vertices
         - faces: torch.Tensor or np.ndarray, (F, 3) or (L, F, 3), F ~ number of faces, L ~ sequence length
+        - colors: torch.Tensor or np.ndarray, (L, V, 3), L ~ sequence length, V ~ number of vertices, 
+            - The colors of the vertices, values in [0, 255].
         - name: str
             - The name of the point cloud.
         - offset: int, default = 0
@@ -109,9 +112,10 @@ class HWis3D(Wis3D):
         for i in range(L):
             self.set_scene_id(i + offset)
             self.add_mesh(
-                vertices = verts[i],
-                faces    = faces[i],
-                name     = name,
+                vertices      = verts[i],
+                faces         = faces[i],
+                vertex_colors = colors[i].clone() / 255.0,
+                name          = name,
             )  # type: ignore
 
         # Reset Wis3D scene id.
@@ -385,7 +389,7 @@ class HWis3D(Wis3D):
                 name       = name,
             )
 
-    def add_floor_motion(
+    def add_motion_floor(
         self,
         center       : torch.Tensor,
         seq_length   : int,
