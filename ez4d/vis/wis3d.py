@@ -1,7 +1,8 @@
 import torch
 import numpy as np
+import trimesh
 
-from typing import Union, List, overload
+from typing import Union, List, overload, Tuple
 from wis3d import Wis3D
 
 from ..geometry.rotation import axis_angle_to_matrix
@@ -383,6 +384,198 @@ class HWis3D(Wis3D):
                 activities = activities[i],
                 name       = name,
             )
+
+    def add_floor_motion(
+        self,
+        center       : torch.Tensor,
+        seq_length   : int,
+        thickness    : float = 0.1,
+        n_grids_half : int = 5,
+        grid_size    : float = 1.0,
+        up_dir       : str = 'y+',     # {'x', 'y', 'z'} * {'+', '-'}
+        name         : str='floor',
+        offset       : int = 0,
+    ):
+        """
+        Add a checkerboard floor plane to the wis3d viewer.
+        The grid is always aligned with the center, i.e., the center should be the shared corner of the
+        four neighboring grids.
+
+        ### Args
+            - center (torch.Tensor): (3,)
+                - The center of the floor plane.
+            - seq_length: int,
+                - The sequence length.
+            - thickness: float, default = 0.1
+                - The thickness of the floor plane. It will only expand along the downward direction.
+            - n_grad_radian: int, default = 5
+                - The number of grid squares per side.
+            - grid_size: float, default = 1.0
+                - The size of one grid square.
+            - up_dir: str, default = 'y+'
+                - The direction of the up direction. It can be 'x+', 'x-', 'y+', 'y-', 'z+', 'z-'.
+                - For example, 'y+' means the up direction is along the positive y-axis.
+            - name: str
+                - The name of the floor plane.
+            - offset: int, default = 0
+                - The offset for the sequence index.
+        """
+        for i in range(seq_length):
+            self.set_scene_id(i + offset)
+            self.add_floor(
+                center       = center,
+                thickness    = thickness,
+                n_grids_half = n_grids_half,
+                grid_size    = grid_size,
+                up_dir       = up_dir,
+                name         = name,
+            )
+        # Reset Wis3D scene id.
+        self.set_scene_id(0)
+
+    def _make_aabox(
+        self,
+        min_xyz : np.ndarray,
+        max_xyz : np.ndarray,
+        colors  : np.ndarray,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        <<< Vibe Coding Marked >>>
+        Generate a single axis-aligned box from min/max corners in world xyz.
+
+        ### Args
+            - min_xyz: (3,) world coords of the min corner
+            - max_xyz: (3,) world coords of the max corner
+            - colors: (3,) uint8 single color, or (8, 3) uint8 per-vertex
+
+        ### Returns
+            - vertices: (8, 3)
+                - The vertices of the box.
+            - faces: (12, 3)
+                - The faces of the box.
+            - vertex_colors: (8, 3) uint8
+                - The colors of the vertices, from 0 to 255.
+        """
+        min_xyz = np.asarray(min_xyz).flatten()
+        max_xyz = np.asarray(max_xyz).flatten()
+        assert min_xyz.shape == (3,) and max_xyz.shape == (3,)
+        verts = np.zeros((8, 3))
+        for iz in range(2):
+            for iy in range(2):
+                for ix in range(2):
+                    idx = 2 * ix + iy + 4 * iz
+                    verts[idx, 0] = min_xyz[0] if ix == 0 else max_xyz[0]
+                    verts[idx, 1] = min_xyz[1] if iy == 0 else max_xyz[1]
+                    verts[idx, 2] = min_xyz[2] if iz == 0 else max_xyz[2]
+
+        faces = np.array([
+                [3, 2, 0], [1, 3, 0],  # z_min
+                [7, 5, 4], [6, 7, 4],  # z_max
+                [5, 1, 0], [4, 5, 0],  # x_min
+                [7, 6, 2], [3, 7, 2],  # x_max
+                [6, 4, 0], [2, 6, 0],  # y_min
+                [7, 3, 1], [5, 7, 1],  # y_max
+            ], dtype=np.int64)
+        colors = np.asarray(colors, dtype=np.uint8)
+        if colors.shape == (3,):
+            vertex_colors = np.broadcast_to(colors, (8, 3)).copy()
+        else:
+            assert colors.shape == (8, 3), "colors must be (3,) or (8, 3)"
+            vertex_colors = colors.copy()
+        return verts, faces, vertex_colors
+
+    def add_floor(
+        self,
+        center       : torch.Tensor,
+        thickness    : float = 0.1,
+        n_grids_half : int = 5,
+        grid_size    : float = 1.0,
+        up_dir       : str = 'y+',     # {'x', 'y', 'z'} * {'+', '-'}
+        name         : str = 'floor',
+    ):
+        """
+        <<< Vibe Coding Marked >>>
+        Add a checkerboard floor plane to the wis3d viewer.
+        The checkerboard is built as n*n pure-color boxes via add_box.
+
+        ### Args
+            - center (torch.Tensor): (3,)
+                - The center of the floor plane.
+            - thickness: float, default = 0.1
+                - The thickness of the floor plane. It will only expand along the downward direction.
+            - n_grids_half: int, default = 5
+                - Half of the number of grid squares per side.
+            - grid_size: float, default = 1.0
+                - The size of one grid square.
+            - up_dir: str, default = 'y+'
+                - The direction of the up direction. It can be 'x+', 'x-', 'y+', 'y-', 'z+', 'z-'.
+            - name: str
+                - The name of the floor plane.
+        """
+        assert len(up_dir) == 2 and up_dir[0] in ['x', 'y', 'z'] and up_dir[1] in ['+', '-'], \
+            f"Invalid up_dir: {up_dir}. Expected format: 'x+', 'x-', 'y+', 'y-', 'z+', or 'z-'."
+        up_axis = up_dir[0]
+        up_sign = 1.0 if up_dir[1] == '+' else -1.0
+        if up_axis == 'x':
+            up_idx, axis1_idx, axis2_idx = 0, 1, 2
+        elif up_axis == 'y':
+            up_idx, axis1_idx, axis2_idx = 1, 0, 2
+        else:
+            up_idx, axis1_idx, axis2_idx = 2, 0, 1
+
+        if isinstance(center, torch.Tensor):
+            center = center.detach().cpu().numpy()
+        center = np.array(center).flatten()
+        assert len(center) == 3, f"center should have shape (3,), but got {center.shape}"
+
+        num_grids_per_side = n_grids_half * 2
+        length = num_grids_per_side * grid_size
+        half_length = length / 2.0
+        color_white = np.array([255, 255, 255], dtype=np.uint8)
+        color_dark = np.array([64, 64, 64], dtype=np.uint8)
+
+        # Plane extent in world: axis1/axis2 from center ± half_length; up: top = center, bottom = center - thickness*up_sign
+        bottom_up = center[up_idx] - thickness * up_sign
+        top_up = center[up_idx]
+        min_up = min(bottom_up, top_up)
+        max_up = max(bottom_up, top_up)
+
+        verts_list, faces_list, colors_list = [], [], []
+        vertex_offset = 0
+        for i in range(num_grids_per_side):
+            for j in range(num_grids_per_side):
+                o1 = -half_length + i * grid_size
+                o2 = -half_length + j * grid_size
+                min_xyz = np.array([
+                    center[0], center[1], center[2],
+                ], dtype=np.float64)
+                max_xyz = min_xyz.copy()
+                min_xyz[axis1_idx] = center[axis1_idx] + o1
+                max_xyz[axis1_idx] = center[axis1_idx] + o1 + grid_size
+                min_xyz[axis2_idx] = center[axis2_idx] + o2
+                max_xyz[axis2_idx] = center[axis2_idx] + o2 + grid_size
+                min_xyz[up_idx] = min_up
+                max_xyz[up_idx] = max_up
+
+                is_white = (i + j) % 2 == 0
+                color = color_white if is_white else color_dark
+                v, f, c = self._make_aabox(min_xyz, max_xyz, color)
+                verts_list.append(v)
+                faces_list.append(f + vertex_offset)
+                colors_list.append(c)
+                vertex_offset += 8
+
+        vertices = np.concatenate(verts_list, axis=0)
+        faces = np.concatenate(faces_list, axis=0)
+        vertex_colors = np.concatenate(colors_list, axis=0)
+
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+        mesh.visual.vertex_colors = np.hstack([vertex_colors, np.full((len(vertices), 1), 255, dtype=np.uint8)])
+
+        self.add_mesh(
+            vertices = mesh,
+            name     = name,
+        )
 
 
     # ===== Overriding methods from original Wis3D. =====
