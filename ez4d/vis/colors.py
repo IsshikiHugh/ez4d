@@ -25,22 +25,22 @@ class ColorPalette:
 
     # Picked from: https://colorsite.librian.net/
     presets = {
-        'black'        : '#2b2b2b',
-        'gray'         : '#95a5a6',
-        'white'        : '#eaedf7',
-        'pink'         : '#e6cde3',
-        'light_pink'   : '#fdeff2',
-        'blue'         : '#89c3eb',
-        'purple'       : '#a6a5c4',
-        'light_purple' : '#bbc8e6',
-        'red'          : '#d3381c',
-        'orange'       : '#f9c89b',
-        'light_orange' : '#fddea5',
-        'brown'        : '#b48a76',
-        'human_yellow' : '#f1bf99',
-        'green'        : '#a8c97f',
-    }
+            'black'        : '#2b2b2b',
+            'gray'         : '#95a5a6',
+            'white'        : '#eaedf7',
+            'pink'         : '#e6cde3',
+            'light_pink'   : '#fdeff2',
+            'blue'         : '#89c3eb',
+            'purple'       : '#a6a5c4',
+            'light_purple' : '#bbc8e6',
+            'red'          : '#d3381c',
+            'orange'       : '#f9c89b',
+            'light_orange' : '#fddea5',
+            'brown'        : '#b48a76',
+            'human_yellow' : '#f1bf99',
+            'green'        : '#a8c97f',
+        }
 
-    presets_int8 = {k: hex_to_int8(v) for k, v in presets.items()}
+    presets_int8  = {k: hex_to_int8(v) for k, v in presets.items()}
     presets_float = {k: int8_to_float(v) for k, v in presets_int8.items()}
-    presets_hex = {k: v for k, v in presets.items()}
+    presets_hex   = {k: v for k, v in presets.items()}

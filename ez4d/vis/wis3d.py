@@ -2,9 +2,11 @@ import torch
 import numpy as np
 import trimesh
 
-from typing import Union, List, overload, Tuple
+from typing import Union, List, overload, Tuple, Optional
 from wis3d import Wis3D
 
+from .colors import ColorPalette
+from ..data import to_numpy
 from ..geometry.rotation import axis_angle_to_matrix
 
 
@@ -76,8 +78,8 @@ class HWis3D(Wis3D):
         self,
         verts  : Union[torch.Tensor, np.ndarray],
         faces  : Union[torch.Tensor, np.ndarray],
-        colors : Union[torch.Tensor, np.ndarray],
         name   : str,
+        colors : Union[str, torch.Tensor, np.ndarray] = 'gray',
         offset : int = 0,
     ):
         """
@@ -86,7 +88,8 @@ class HWis3D(Wis3D):
         ### Args
         - verts: torch.Tensor or np.ndarray, (L, V, 3), L ~ sequence length, V ~ number of vertices
         - faces: torch.Tensor or np.ndarray, (F, 3) or (L, F, 3), F ~ number of faces, L ~ sequence length
-        - colors: torch.Tensor or np.ndarray, (L, V, 3), L ~ sequence length, V ~ number of vertices, 
+        - colors: str or torch.Tensor or np.ndarray, (L, V, 3), L ~ sequence length, V ~ number of vertices, default = None
+            - If it's a string, all vertices will be colored with that according to the ColorPalette.
             - The colors of the vertices, values in [0, 255].
         - name: str
             - The name of the point cloud.
@@ -111,10 +114,16 @@ class HWis3D(Wis3D):
         # Add vertices frame by frame.
         for i in range(L):
             self.set_scene_id(i + offset)
+            if isinstance(colors, str):
+                v_colors = to_numpy(ColorPalette.presets_float[colors])
+            elif isinstance(colors, torch.Tensor) or isinstance(colors, np.ndarray):
+                v_colors = colors[i] / 255.0
+            else:
+                raise ValueError(f'The input `colors` should be a string or a torch.Tensor or a np.ndarray, but got {type(colors)}.')
             self.add_mesh(
                 vertices      = verts[i],
                 faces         = faces[i],
-                vertex_colors = colors[i].clone() / 255.0,
+                vertex_colors = v_colors,
                 name          = name,
             )  # type: ignore
 
@@ -391,14 +400,14 @@ class HWis3D(Wis3D):
 
     def add_motion_floor(
         self,
-        center       : torch.Tensor,
-        seq_length   : int,
+        center       : Union[torch.Tensor, np.ndarray] = np.zeros((3,)),
+        seq_length   : int   = 1,
         thickness    : float = 0.1,
-        n_grids_half : int = 5,
+        n_grids_half : int   = 5,
         grid_size    : float = 1.0,
-        up_dir       : str = 'y+',     # {'x', 'y', 'z'} * {'+', '-'}
-        name         : str='floor',
-        offset       : int = 0,
+        up_dir       : str   = 'y+',      # {'x', 'y', 'z'} * {'+', '-'}
+        name         : str   = 'floor',
+        offset       : int   = 0,
     ):
         """
         Add a checkerboard floor plane to the wis3d viewer.
@@ -406,7 +415,7 @@ class HWis3D(Wis3D):
         four neighboring grids.
 
         ### Args
-            - center (torch.Tensor): (3,)
+            - center (torch.Tensor or np.ndarray): (3,)
                 - The center of the floor plane.
             - seq_length: int,
                 - The sequence length.
@@ -490,12 +499,12 @@ class HWis3D(Wis3D):
 
     def add_floor(
         self,
-        center       : torch.Tensor,
+        center       : Union[torch.Tensor, np.ndarray] = np.zeros((3,)),
         thickness    : float = 0.1,
-        n_grids_half : int = 5,
+        n_grids_half : int   = 5,
         grid_size    : float = 1.0,
-        up_dir       : str = 'y+',     # {'x', 'y', 'z'} * {'+', '-'}
-        name         : str = 'floor',
+        up_dir       : str   = 'y+',      # {'x', 'y', 'z'} * {'+', '-'}
+        name         : str   = 'floor',
     ):
         """
         <<< Vibe Coding Marked >>>
@@ -503,7 +512,7 @@ class HWis3D(Wis3D):
         The checkerboard is built as n*n pure-color boxes via add_box.
 
         ### Args
-            - center (torch.Tensor): (3,)
+            - center (torch.Tensor or np.ndarray): (3,)
                 - The center of the floor plane.
             - thickness: float, default = 0.1
                 - The thickness of the floor plane. It will only expand along the downward direction.
@@ -589,7 +598,7 @@ class HWis3D(Wis3D):
         self,
         start_points: torch.Tensor,
         end_points  : torch.Tensor,
-        colors      : Union[list, torch.Tensor] = None,
+        colors      : Optional[Union[list, torch.Tensor]] = None,
         name        : str   = None,
         thickness   : float = 0.01,
         resolution  : int   = 4,
