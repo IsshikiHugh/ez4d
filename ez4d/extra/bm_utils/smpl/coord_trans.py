@@ -19,8 +19,8 @@ def apply_Ts_on_params(
     And get the transformed SMPL parameters.
 
     ### Args
-    - global_orient: torch.Tensor (B, 3)
-    - body_pose: torch.Tensor (B, 23, 3)
+    - global_orient: torch.Tensor (B, 1, 3) or (B, 3)
+    - body_pose: torch.Tensor (B, 23, 3) or (B, 69)
     - transl: torch.Tensor (B, 3)
     - betas: torch.Tensor (B, 10)
     - transform: torch.Tensor (B, 4, 4) or (4, 4)
@@ -33,13 +33,13 @@ def apply_Ts_on_params(
     - new_params: Dict
         - The transformed SMPL parameters.
         - Keys: 'global_orient', 'body_pose', 'transl', 'betas'.
-        - Values: torch.Tensor (B, 3), torch.Tensor (B, 23, 3), torch.Tensor (B, 3), torch.Tensor (B, 10).
+        - Values: torch.Tensor (B, 1, 3)/(B, 3), torch.Tensor (B, 23, 3)/(B, 69), torch.Tensor (B, 3), torch.Tensor (B, 10).
     """
+
     # 0. Pre-check.
     if len(transform.shape) == 2:
         transform = transform[None]  # (1, 4, 4)
-    B = transform.shape[0]
-    assert global_orient.shape[0] == B, f'Shape of global_orient should be (B, 3) but {global_orient.shape}'
+    B = global_orient.shape[0]
     assert body_pose.shape[0] == B, f'Shape of body_pose should be (B, 23, 3) but {body_pose.shape}'
     assert transl.shape[0] == B, f'Shape of transl should be (B, 3) but {transl.shape}'
     assert betas.shape[0] == B, f'Shape of betas should be (B, 10) but {betas.shape}'
@@ -52,7 +52,13 @@ def apply_Ts_on_params(
     R_mat, _ = T_to_Rt(transform)  # (B, 3, 3), (B, 3)
     orient_mat_old = ezrot.axis_angle_to_matrix(global_orient.reshape(-1, 3))  # (B, 3, 3)
     orient_mat_new = R_mat @ orient_mat_old  # (B, 3, 3)
-    global_orient_new = ezrot.matrix_to_axis_angle(orient_mat_new).reshape(B, 1, 3)  # (B, 3)
+    global_orient_new = ezrot.matrix_to_axis_angle(orient_mat_new).reshape(B, 3)  # (B, 3)
+    if body_pose.shape[1] == 23:
+        global_orient_new = global_orient_new.reshape(B, 1, 3)
+    elif body_pose.shape[1] == 69:
+        global_orient_new = global_orient_new.reshape(B, 3)
+    else:
+        raise ValueError(f'Shape of body_pose should be (B, 23, 3) or (B, 69) but {body_pose.shape}')
 
     # 2. Calculate the root offset caused by the non-zero SMPL root position.
     #    Changing orientation won't affect this, so we need to manually transform
