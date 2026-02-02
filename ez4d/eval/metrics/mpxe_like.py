@@ -4,7 +4,7 @@ import torch
 from .utils import *
 
 
-'''
+"""
 All MPxE-like metrics will be implements here.
 
 - Local Metrics: the inputs motion's translation should be removed (or may be automatically removed).
@@ -14,7 +14,7 @@ All MPxE-like metrics will be implements here.
     - G-MPxE: call `eval_MPxE()`
     - W2-MPxE: call `eval_Wk_MPxE()`, and set k = 2
     - WA-MPxE: call `eval_WA_MPxE()`
-'''
+"""
 
 
 def eval_MPxE(
@@ -23,7 +23,7 @@ def eval_MPxE(
     scale   : float = m2mm,
     root_id : Optional[int] = None,
 ):
-    '''
+    """
     Calculate the Mean Per <X> Error. <X> might be joints position (MPJPE), or vertices (MPVE).
 
     The results will be the sequence of MPxE of each multi-dim batch.
@@ -43,7 +43,7 @@ def eval_MPxE(
 
     ### Returns
     - torch.Tensor, (...B)
-    '''
+    """
     if root_id is not None:
         pd = pd.clone() - pd[..., root_id:root_id+1, :]
         gt = gt.clone() - gt[..., root_id:root_id+1, :]
@@ -58,7 +58,7 @@ def eval_PA_MPxE(
     gt    : torch.Tensor,
     scale : float = m2mm,
 ):
-    '''
+    """
     Calculate the Procrustes-Aligned Mean Per <X> Error. <X> might be joints position (PA-MPJPE), or
     vertices (PA-MPVE). Targets will be Procrustes-aligned and then calculate the per frame MPxE.
 
@@ -73,7 +73,7 @@ def eval_PA_MPxE(
 
     ### Returns
     - torch.Tensor, (...B)
-    '''
+    """
     # Perform Procrustes alignment.
     pd_aligned = similarity_align_to(pd, gt) # (...B, N, 3)
     # Calculate the PA-MPxE
@@ -86,7 +86,7 @@ def eval_Wk_MPxE(
     scale : float = m2mm,
     k_f   : int   = 2,
 ):
-    '''
+    """
     Calculate the first k frames aligned (World aligned) Mean Per <X> Error. <X> might be joints
     position (PA-MPJPE), or vertices (PA-MPVE). Targets will be aligned using the first k frames
     and then calculate the per frame MPxE.
@@ -104,7 +104,7 @@ def eval_Wk_MPxE(
 
     ### Returns
     - torch.Tensor, (..., L)
-    '''
+    """
     L = max(pd.shape[-3], gt.shape[-3])
     assert L >= 2, f'Length of the sequence should be at least 2, but got {L}.'
     # Perform first two alignment.
@@ -118,7 +118,7 @@ def eval_WA_MPxE(
     gt    : torch.Tensor,
     scale : float = m2mm,
 ):
-    '''
+    """
     Calculate the all frames aligned (World All aligned) Mean Per <X> Error. <X> might be joints
     position (PA-MPJPE), or vertices (PA-MPVE). Targets will be aligned using the first k frames
     and then calculate the per frame MPxE.
@@ -134,7 +134,7 @@ def eval_WA_MPxE(
 
     ### Returns
     - torch.Tensor, (..., L)
-    '''
+    """
     L_pd = pd.shape[-3]
     L_gt = gt.shape[-3]
     assert (L_pd == L_gt), f'Length of the sequence should be the same, but got {L_pd} and {L_gt}.'
