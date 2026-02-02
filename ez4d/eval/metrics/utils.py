@@ -106,7 +106,7 @@ def align_pcl(Y: torch.Tensor, X: torch.Tensor, weight=None, fixed_scale=False):
     - `t` (*, 3)
     '''
     *dims, N, _ = Y.shape
-    N = torch.ones(*dims, 1, 1) * N
+    N = torch.ones(*dims, 1, 1).to(Y.device) * N
 
     if weight is not None:
         Y = Y * weight
@@ -127,7 +127,7 @@ def align_pcl(Y: torch.Tensor, X: torch.Tensor, weight=None, fixed_scale=False):
     C = torch.matmul(y0.transpose(-1, -2), x0) / N  # (*, 3, 3)
     U, D, Vh = torch.linalg.svd(C)  # (*, 3, 3), (*, 3), (*, 3, 3)
 
-    S = torch.eye(3).reshape(*(1,) * (len(dims)), 3, 3).repeat(*dims, 1, 1)
+    S = torch.eye(3).reshape(*(1,) * (len(dims)), 3, 3).repeat(*dims, 1, 1).to(Y.device)
     neg = torch.det(U) * torch.det(Vh.transpose(-1, -2)) < 0
     S[neg, 2, 2] = -1
 

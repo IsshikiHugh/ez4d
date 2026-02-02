@@ -18,9 +18,10 @@ All MPxE-like metrics will be implements here.
 
 
 def eval_MPxE(
-    pd    : torch.Tensor,
-    gt    : torch.Tensor,
-    scale : float = m2mm,
+    pd      : torch.Tensor,
+    gt      : torch.Tensor,
+    scale   : float = m2mm,
+    root_id : Optional[int] = None,
 ):
     '''
     Calculate the Mean Per <X> Error. <X> might be joints position (MPJPE), or vertices (MPVE).
@@ -29,18 +30,24 @@ def eval_MPxE(
 
     ### Args
     - `pd`: torch.Tensor
-        - shape = (...B, N, 3), where B is the multi-dim batch size, N is points count in one batch
+        - (...B, N, 3), where B is the multi-dim batch size, N is points count in one batch
         - the predicted joints/vertices position data
     - `gt`: torch.Tensor
-        - shape = (...B, N, 3), where B is the multi-dim batch size, N is points count in one batch
+        - (...B, N, 3), where B is the multi-dim batch size, N is points count in one batch
         - the ground truth joints/vertices position data
     - `scale`: float, default = `m2mm`
+    - `root_id`: Optional[int], default = None
+        - The root joint index to remove the translation and rotation before measuring the error.
+        - If None, no root alignment will be performed.
+        - Common MPJPE/MPVE should be measured with root alignment.
 
     ### Returns
-    - torch.Tensor
-        - shape = (...B)
-        - shape = ()
+    - torch.Tensor, (...B)
     '''
+    if root_id is not None:
+        pd = pd.clone() - pd[..., root_id:root_id+1, :]
+        gt = gt.clone() - gt[..., root_id:root_id+1, :]
+
     # Calculate the MPxE.
     ret = L2_disttance(pd, gt).mean(dim=-1) * scale # (...B,)
     return ret
@@ -58,18 +65,14 @@ def eval_PA_MPxE(
     The results will be the sequence of MPxE of each batch.
 
     ### Args
-    - `pd`: torch.Tensor
-        - shape = (...B, N, 3), where B is the multi-dim batch size, N is points count in one batch
-        - the predicted joints/vertices position data
-    - `gt`: torch.Tensor
-        - shape = (...B, N, 3), where B is the multi-dim batch size, N is points count in one batch
-        - the ground truth joints/vertices position data
+    - `pd`: torch.Tensor, (...B, N, 3), where B is the multi-dim batch size, N is points count in one batch
+        - The predicted joints/vertices position data
+    - `gt`: torch.Tensor, (...B, N, 3), where B is the multi-dim batch size, N is points count in one batch
+        - The ground truth joints/vertices position data.
     - `scale`: float, default = `m2mm`
 
     ### Returns
-    - torch.Tensor
-        - shape = (...B)
-        - shape = ()
+    - torch.Tensor, (...B)
     '''
     # Perform Procrustes alignment.
     pd_aligned = similarity_align_to(pd, gt) # (...B, N, 3)
@@ -91,20 +94,16 @@ def eval_Wk_MPxE(
     The results will be the sequence of MPxE of each batch.
 
     ### Args
-    - `pd`: torch.Tensor
-        - shape = (..., L, N, 3), where L is the length of the sequence, N is points count in one batch
-        - the predicted joints/vertices position data
-    - `gt`: torch.Tensor
-        - shape = (..., L, N, 3), where L is the length of the sequence, N is points count in one batch
-        - the ground truth joints/vertices position data
+    - `pd`: torch.Tensor, (..., L, N, 3), where L is the length of the sequence, N is points count in one batch
+        - The predicted joints/vertices position data.
+    - `gt`: torch.Tensor, (..., L, N, 3), where L is the length of the sequence, N is points count in one batch
+        - The ground truth joints/vertices position data.
     - `scale`: float, default = `m2mm`
     - `k_f`: int, default = 2
-        - the number of frames to use for alignment
+        - The number of frames to use for alignment.
 
     ### Returns
-    - torch.Tensor
-        - shape = (..., L)
-        - shape = ()
+    - torch.Tensor, (..., L)
     '''
     L = max(pd.shape[-3], gt.shape[-3])
     assert L >= 2, f'Length of the sequence should be at least 2, but got {L}.'
@@ -127,18 +126,14 @@ def eval_WA_MPxE(
     The results will be the sequence of MPxE of each batch.
 
     ### Args
-    - `pd`: torch.Tensor
-        - shape = (..., L, N, 3), where L is the length of the sequence, N is points count in one batch
-        - the predicted joints/vertices position data
-    - `gt`: torch.Tensor
-        - shape = (..., L, N, 3), where L is the length of the sequence, N is points count in one batch
-        - the ground truth joints/vertices position data
+    - `pd`: torch.Tensor, (..., L, N, 3), where L is the length of the sequence, N is points count in one batch
+        - The predicted joints/vertices position data.
+    - `gt`: torch.Tensor, (..., L, N, 3), where L is the length of the sequence, N is points count in one batch
+        - The ground truth joints/vertices position data.
     - `scale`: float, default = `m2mm`
 
     ### Returns
-    - torch.Tensor
-        - shape = (..., L)
-        - shape = ()
+    - torch.Tensor, (..., L)
     '''
     L_pd = pd.shape[-3]
     L_gt = gt.shape[-3]
