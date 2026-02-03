@@ -3,6 +3,15 @@
 It defines the topology of the skeleton and the visualization (color) symbols.
 """
 
+
+def compute_bones_from_parents(parents):
+    bones = []
+    for i in range(len(parents)):
+        if parents[i] != -1:
+            bones.append([parents[i], i])
+    return sorted(bones)
+
+
 class Skeleton():
     # Any topology related.s
     bones = []
@@ -38,8 +47,8 @@ class Skeleton_COCO17(Skeleton):
         ]
 
     root_idx = None  # invalid for none-tree skeletons
-    root_idx = None  # invalid for nontree skeletons
-    parent   = None  # invalid for nontree skeletons
+    root_idx = None  # invalid for none-tree skeletons
+    parent   = None  # invalid for none-tree skeletons
 
 
 class Skeleton_SMPL24(Skeleton):
@@ -97,31 +106,30 @@ class Skeleton_SMPL22(Skeleton):
 
 
 class Skeleton_SKEL24(Skeleton):
-    # NOTE: Please only use this for visualization purposes.
-    # FIXME: it's not consistent with the SKEL's official "parents".
+    """ Aligned with SKEL's official "parents". """
     root_idx = 0
     chains = [
-            [ 0,  6,  7,  8,  9, 10],  # left leg
             [ 0,  1,  2,  3,  4,  5],  # right leg
+            [ 0,  6,  7,  8,  9, 10],  # left leg
             [ 0, 11, 12, 13],          # spine & head
-            [12, 19, 20, 21, 22, 23],  # left arm
             [12, 14, 15, 16, 17, 18],  # right arm
+            [12, 19, 20, 21, 22, 23],  # left arm
         ]
     bones = [
-            [ 0,  6], [ 6,  7], [ 7,  8], [ 8,  9], [ 9, 10],  # left leg
             [ 0,  1], [ 1,  2], [ 2,  3], [ 3,  4], [ 4,  5],  # right leg
+            [ 0,  6], [ 6,  7], [ 7,  8], [ 8,  9], [ 9, 10],  # left leg
             [ 0, 11], [11, 12], [12, 13],                      # spine & head
-            [12, 19], [19, 20], [20, 21], [21, 22], [22, 23],  # left arm
             [12, 14], [14, 15], [15, 16], [16, 17], [17, 18],  # right arm
+            [12, 19], [19, 20], [20, 21], [21, 22], [22, 23],  # left arm
         ]
     bone_colors = [
-            [127,   0,   0], [148,  21,  21], [169,  41,  41], [191,  63,  63], [191,  63,  63],  # red
             [  0, 127,   0], [ 21, 148,  21], [ 41, 169,  41], [ 63, 191,  63], [ 63, 191,  63],  # green
+            [127,   0,   0], [148,  21,  21], [169,  41,  41], [191,  63,  63], [191,  63,  63],  # red
             [  0,   0, 127], [ 31,  31, 159], [ 63,  63, 191],                                    # blue
-            [  0, 127, 127], [ 15, 143, 143], [ 31, 159, 159], [ 47, 175, 175], [ 63, 191, 191],  # cyan
             [127,   0, 127], [143,  15, 143], [159,  31, 159], [175,  47, 175], [191,  63, 191],  # magenta
+            [  0, 127, 127], [ 15, 143, 143], [ 31, 159, 159], [ 47, 175, 175], [ 63, 191, 191],  # cyan
         ]
-    parent = [-1, 0, 1, 2, 3, 4, 0, 6, 7, 8, 9, 0, 11, 12, 12, 19, 20, 21, 22, 12, 14, 15, 16, 17]
+    parent = [-1, 0, 1, 2, 3, 4, 0, 6, 7, 8, 9, 0, 11, 12, 12, 14, 15, 16, 17, 12, 19, 20, 21, 22]
 
 
 class Skeleton_OpenPose25(Skeleton):
