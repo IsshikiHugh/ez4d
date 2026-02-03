@@ -197,7 +197,7 @@ def draw_kp2d_on_img(
         kp_has_drawn[i] = True
 
         if show_conf:
-            _put_text(img, f'{conf:.2f}', pos)
+            _put_text(img, f'{conf:.2f}', pos, scale=0.03)
         if show_idx:
             if i >= 40:
                 continue
