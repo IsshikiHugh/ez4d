@@ -2,16 +2,17 @@ import cv2
 import numpy as np
 import torch
 
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 from pathlib import Path
 from ..data import to_numpy
 from ..vis import ColorPalette
 
 
 def annotate_img(
-    img  : np.ndarray,
-    text : str,
-    pos  : Union[str, Tuple[int, int]] = 'bl',
+    img   : np.ndarray,
+    text  : str,
+    pos   : Union[str, Tuple[int, int]] = 'bl',
+    scale : Optional[float] = None,
 ):
     """
     Annotate the image with the given text.
@@ -22,13 +23,16 @@ def annotate_img(
     - pos: str or tuple(int, int), default 'bl'
         - If str, one of ['tl', 'bl'].
         - If tuple, (x, y), the position of the text.
+    - scale: Optional[float], default None
+        - The scale of the text. 
+        - If None, the scale will be automatically determined based on the image size.
 
     ### Returns
     - np.ndarray, (H, W, 3)
         - The annotated image.
     """
     assert len(img.shape) == 3, 'img must have 3 dimensions.'
-    return annotate_video(frames=img[None], text=text, pos=pos)[0]
+    return annotate_video(frames=img[None], text=text, pos=pos, scale=scale)[0]
 
 
 def annotate_video(
@@ -36,6 +40,7 @@ def annotate_video(
     text   : str,
     pos    : Union[str, Tuple[int, int]] = 'bl',
     alpha  : float = 0.75,
+    scale  : Optional[float] = None,
 ):
     """
     Annotate the video frames with the given text.
@@ -48,6 +53,9 @@ def annotate_video(
         - If tuple, (x, y), the position of the text.
     - alpha: float, default 0.5
         - The transparency of the text.
+    - scale: Optional[float], default None
+        - The scale of the text. 
+        - If None, the scale will be automatically determined based on the image size.
 
     ### Returns
     - np.ndarray, (L, H, W, 3)
@@ -59,9 +67,9 @@ def annotate_video(
 
     if isinstance(pos, str):
         if pos == 'tl':
-            offset = (int(0.1 * W), int(0.1 * H))
+            offset = (int(0.05 * W), int(0.05 * H))
         elif pos == 'bl':
-            offset = (int(0.1 * W), int(0.9 * H))
+            offset = (int(0.05 * W), int(0.95 * H))
         else:
             raise ValueError(f'Invalid position: {pos}')
     else:
@@ -69,7 +77,7 @@ def annotate_video(
 
     for i, frame in enumerate(frames):
         overlay = frame.copy()
-        _put_text(overlay, text, offset)
+        _put_text(overlay, text, offset, scale=scale)
         frames[i] = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
 
     return frames
@@ -197,11 +205,11 @@ def draw_kp2d_on_img(
         kp_has_drawn[i] = True
 
         if show_conf:
-            _put_text(img, f'{conf:.2f}', pos, scale=0.03)
+            _put_text(img, f'{conf:.2f}', pos, scale=0.5)
         if show_idx:
             if i >= 40:
                 continue
-            _put_text(img, f'{i}', pos, scale=0.03)
+            _put_text(img, f'{i}', pos, scale=0.5)
 
     return img
 
@@ -212,7 +220,7 @@ def _put_text(
     img          : np.ndarray,
     text         : str,
     pos          : Tuple[int, int],
-    scale        : float = 0.05,
+    scale        : float = 1.0,
     color_inside : Tuple[int, int, int] = ColorPalette.presets_int8['black'],
     color_stroke : Tuple[int, int, int] = ColorPalette.presets_int8['white'],
     **kwargs
@@ -224,7 +232,7 @@ def _put_text(
 
     H, W = img.shape[:2]
     # https://stackoverflow.com/a/55772676/22331129
-    font_scale = scale * min(H, W) / 25 * 1.5
+    font_scale = scale * min(H, W) / 750
     thickness_inside = max(int(font_scale), 1)
     thickness_stroke = max(int(font_scale * 6), 6)
 
