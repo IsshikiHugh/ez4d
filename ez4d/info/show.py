@@ -13,13 +13,14 @@ from ..data import to_numpy
 
 
 def show_distribution(
-    data       : Dict,
-    fn         : Union[str, Path],  # File name of the saved figure.
-    bins       : int  = 100,        # Number of bins in the histogram.
-    annotation : bool = False,
-    title      : str = 'Data Distribution',
-    axis_names : List = ['Value', 'Frequency'],
-    bounds     : Optional[List] = None,  # Left and right bounds of the histogram.
+    data        : Dict,
+    fn          : Union[str, Path], # File name of the saved figure.
+    bins        : int  = 100,       # Number of bins in the histogram.
+    annotation  : bool = False,
+    title       : str = 'Data Distribution',
+    axis_names  : List = ['Value', 'Frequency'],
+    bounds      : Optional[List] = None, # Left and right bounds of the histogram.
+    show_legend : bool = True,
 ):
     """
     Visualize the distribution of the data using histogram.
@@ -41,7 +42,8 @@ def show_distribution(
     plt.title(title)
     plt.xlabel(axis_names[0])
     plt.ylabel(axis_names[1])
-    plt.legend()
+    if show_legend:
+        plt.legend()
     if bounds:
         plt.xlim(bounds)
     # Save.
@@ -51,12 +53,13 @@ def show_distribution(
 
 
 def show_history(
-    data       : Dict,
-    fn         : Union[str, Path],  # file name of the saved figure
-    annotation : bool = False,
-    title      : str  = 'Data History',
-    axis_names : List = ['Time', 'Value'],
-    ex_starts  : Dict[str, int] = {},  # starting points of the history if not starting from 0
+    data        : Dict,
+    fn          : Union[str, Path],           # file name of the saved figure
+    annotation  : bool = False,
+    title       : str  = 'Data History',
+    axis_names  : List = ['Time', 'Value'],
+    ex_starts   : Dict[str, int] = {},        # starting points of the history if not starting from 0
+    show_legend : bool = True,
 ):
     """
     Visualize the value of changing across time.
@@ -89,7 +92,8 @@ def show_history(
     plt.title(title)
     plt.xlabel(axis_names[0])
     plt.ylabel(axis_names[1])
-    plt.legend()
+    if show_legend:
+        plt.legend()
     # Save.
     plt.savefig(fn)
     plt.close()
