@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from typing import Optional, Union, List, Dict
 from pathlib import Path
 
-from ..data import to_numpy
+from ..data import Any, to_numpy
 
 
 def show_distribution(
@@ -53,12 +53,13 @@ def show_distribution(
 
 
 def show_history(
-    data        : Dict,
-    fn          : Union[str, Path],           # file name of the saved figure
+    data        : Dict[str, Any],
+    fn          : Union[str, Path],                 # file name of the saved figure
+    data_pos    : Optional[Dict[int, Any]] = None,  # x values of the data.
     annotation  : bool = False,
     title       : str  = 'Data History',
     axis_names  : List = ['Time', 'Value'],
-    ex_starts   : Dict[str, int] = {},        # starting points of the history if not starting from 0
+    ex_starts   : Dict[str, int] = {},  # starting points of the history if not starting from 0
     show_legend : bool = True,
 ):
     """
@@ -83,11 +84,17 @@ def show_history(
 
     # Plot.
     for i in range(N):
-        plt.plot(range(Ss[i], Ss[i]+Ls[i]), history_data[i], label=history_name[i])
+        cur_data_pos = data_pos[history_name[i]]
+        plt.plot(cur_data_pos, history_data[i], label=history_name[i])
     if annotation:
         for i in range(N):
+            if data_pos is None:
+                cur_data_pos = range(Ss[i], Ss[i]+Ls[i])
+            else:
+                cur_data_pos = [data_pos[history_name[i]] for i in range(N)]
+            cur_history_data = history_data[i]
             for j in range(Ls[i]):
-                plt.text(Ss[i]+j, history_data[i][j], f'{history_data[i][j]:.2f}', fontsize=6)
+                plt.text(cur_data_pos[j], cur_history_data[j], f'{cur_history_data[j]:.2f}', fontsize=6)
 
     plt.title(title)
     plt.xlabel(axis_names[0])
