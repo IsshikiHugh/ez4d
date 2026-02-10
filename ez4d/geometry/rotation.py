@@ -39,6 +39,7 @@ e.g.
 """
 
 
+@torch.jit.script_if_tracing
 def quaternion_to_matrix(quaternions: torch.Tensor) -> torch.Tensor:
     """
     Convert rotations given as quaternions to rotation matrices.
@@ -71,6 +72,7 @@ def quaternion_to_matrix(quaternions: torch.Tensor) -> torch.Tensor:
     return o.reshape(quaternions.shape[:-1] + (3, 3))
 
 
+@torch.jit.script_if_tracing
 def _sqrt_positive_part(x: torch.Tensor) -> torch.Tensor:
     """
     Returns torch.sqrt(torch.max(0, x))
@@ -82,6 +84,7 @@ def _sqrt_positive_part(x: torch.Tensor) -> torch.Tensor:
     return ret
 
 
+@torch.jit.script_if_tracing
 def matrix_to_quaternion(matrix: torch.Tensor) -> torch.Tensor:
     """
     Convert rotations given as rotation matrices to quaternions.
@@ -144,6 +147,7 @@ def matrix_to_quaternion(matrix: torch.Tensor) -> torch.Tensor:
     return standardize_quaternion(out)
 
 
+@torch.jit.script_if_tracing
 def _axis_angle_rotation(axis: str, angle: torch.Tensor) -> torch.Tensor:
     """
     Return the rotation matrices for one of the rotations about an axis
@@ -174,6 +178,7 @@ def _axis_angle_rotation(axis: str, angle: torch.Tensor) -> torch.Tensor:
     return torch.stack(R_flat, -1).reshape(angle.shape + (3, 3))
 
 
+@torch.jit.script_if_tracing
 def euler_angles_to_matrix(euler_angles: torch.Tensor, convention: str) -> torch.Tensor:
     """
     Convert rotations given as Euler angles in radians to rotation matrices.
@@ -203,6 +208,7 @@ def euler_angles_to_matrix(euler_angles: torch.Tensor, convention: str) -> torch
     return torch.matmul(torch.matmul(matrices[0], matrices[1]), matrices[2])
 
 
+@torch.jit.script_if_tracing
 def _angle_from_tan(
     axis: str, other_axis: str, data, horizontal: bool, tait_bryan: bool
 ) -> torch.Tensor:
@@ -236,6 +242,7 @@ def _angle_from_tan(
     return torch.atan2(data[..., i2], -data[..., i1])
 
 
+@torch.jit.script_if_tracing
 def _index_from_letter(letter: str) -> int:
     if letter == "X":
         return 0
@@ -246,6 +253,7 @@ def _index_from_letter(letter: str) -> int:
     raise ValueError("letter must be either X, Y or Z.")
 
 
+@torch.jit.script_if_tracing
 def matrix_to_euler_angles(matrix: torch.Tensor, convention: str) -> torch.Tensor:
     """
     Convert rotations given as rotation matrices to Euler angles in radians.
@@ -288,6 +296,7 @@ def matrix_to_euler_angles(matrix: torch.Tensor, convention: str) -> torch.Tenso
     return torch.stack(o, -1)
 
 
+@torch.jit.script_if_tracing
 def standardize_quaternion(quaternions: torch.Tensor) -> torch.Tensor:
     """
     Convert a unit quaternion to a standard form: one in which the real
@@ -303,6 +312,7 @@ def standardize_quaternion(quaternions: torch.Tensor) -> torch.Tensor:
     return torch.where(quaternions[..., 0:1] < 0, -quaternions, quaternions)
 
 
+@torch.jit.script_if_tracing
 def quaternion_raw_multiply(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """
     Multiply two quaternions.
@@ -324,6 +334,7 @@ def quaternion_raw_multiply(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return torch.stack((ow, ox, oy, oz), -1)
 
 
+@torch.jit.script_if_tracing
 def quaternion_multiply(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """
     Multiply two quaternions representing rotations, returning the quaternion
@@ -341,6 +352,7 @@ def quaternion_multiply(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return standardize_quaternion(ab)
 
 
+@torch.jit.script_if_tracing
 def quaternion_invert(quaternion: torch.Tensor) -> torch.Tensor:
     """
     Given a quaternion representing rotation, get the quaternion representing
@@ -358,6 +370,7 @@ def quaternion_invert(quaternion: torch.Tensor) -> torch.Tensor:
     return quaternion * scaling
 
 
+@torch.jit.script_if_tracing
 def quaternion_apply(quaternion: torch.Tensor, point: torch.Tensor) -> torch.Tensor:
     """
     Apply the rotation given by a quaternion to a 3D point.
@@ -381,6 +394,7 @@ def quaternion_apply(quaternion: torch.Tensor, point: torch.Tensor) -> torch.Ten
     return out[..., 1:]
 
 
+@torch.jit.script_if_tracing
 def axis_angle_to_matrix(axis_angle: torch.Tensor) -> torch.Tensor:
     """
     Convert rotations given as axis/angle to rotation matrices.
@@ -397,6 +411,7 @@ def axis_angle_to_matrix(axis_angle: torch.Tensor) -> torch.Tensor:
     return quaternion_to_matrix(axis_angle_to_quaternion(axis_angle))
 
 
+@torch.jit.script_if_tracing
 def matrix_to_axis_angle(matrix: torch.Tensor) -> torch.Tensor:
     """
     Convert rotations given as rotation matrices to axis/angle.
@@ -413,6 +428,7 @@ def matrix_to_axis_angle(matrix: torch.Tensor) -> torch.Tensor:
     return quaternion_to_axis_angle(matrix_to_quaternion(matrix))
 
 
+@torch.jit.script_if_tracing
 def axis_angle_to_quaternion(axis_angle: torch.Tensor) -> torch.Tensor:
     """
     Convert rotations given as axis/angle to quaternions.
@@ -445,6 +461,7 @@ def axis_angle_to_quaternion(axis_angle: torch.Tensor) -> torch.Tensor:
     return quaternions
 
 
+@torch.jit.script_if_tracing
 def quaternion_to_axis_angle(quaternions: torch.Tensor) -> torch.Tensor:
     """
     Convert rotations given as quaternions to axis/angle.
@@ -476,6 +493,7 @@ def quaternion_to_axis_angle(quaternions: torch.Tensor) -> torch.Tensor:
     return quaternions[..., 1:] / sin_half_angles_over_angles
 
 
+@torch.jit.script_if_tracing
 def rotation_6d_to_matrix(d6: torch.Tensor) -> torch.Tensor:
     """
     Converts 6D rotation representation by Zhou et al. [1] to rotation matrix
@@ -499,7 +517,7 @@ def rotation_6d_to_matrix(d6: torch.Tensor) -> torch.Tensor:
     b3 = torch.cross(b1, b2, dim=-1)
     return torch.stack((b1, b2, b3), dim=-2)
 
-
+@torch.jit.script_if_tracing
 def matrix_to_rotation_6d(matrix: torch.Tensor) -> torch.Tensor:
     """
     Converts rotation matrices to 6D rotation representation by Zhou et al. [1]
@@ -521,6 +539,7 @@ def matrix_to_rotation_6d(matrix: torch.Tensor) -> torch.Tensor:
 
 # ====== Some other functions written by Yan Xia ====== #
 
+@torch.jit.script_if_tracing
 def quat_wxyz_to_xyzw(quat: torch.Tensor) -> torch.Tensor:
     """
     Convert quaternion from (w, x, y, z) to (x, y, z, w) format.
@@ -535,6 +554,7 @@ def quat_wxyz_to_xyzw(quat: torch.Tensor) -> torch.Tensor:
     """
     return quat[..., [1, 2, 3, 0]]
 
+@torch.jit.script_if_tracing
 def quat_xyzw_to_wxyz(quat: torch.Tensor) -> torch.Tensor:
     """
     Convert quaternion from (x, y, z, w) to (w, x, y, z) format.
