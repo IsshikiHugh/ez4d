@@ -13,18 +13,35 @@ from ..data import Any, to_numpy
 
 
 def show_distribution(
-    data        : Dict,
-    fn          : Union[str, Path], # File name of the saved figure.
-    bins        : int  = 100,       # Number of bins in the histogram.
-    annotation  : bool = False,
-    title       : str = 'Data Distribution',
+    data        : Dict[str, Any],
+    fn          : Union[str, Path],
+    bins        : int  = 100,
+    title       : str  = 'Data Distribution',
     axis_names  : List = ['Value', 'Frequency'],
-    bounds      : Optional[List] = None, # Left and right bounds of the histogram.
+    bounds      : Optional[List] = None,
+    show_annots : bool = False,
     show_legend : bool = True,
 ):
     """
     Visualize the distribution of the data using histogram.
-    The data should be a dictionary with keys as the labels and values as the data.
+
+    ### Args
+    - data: Dict
+        - A dictionary mapping series names to their values.
+    - fn: Union[str, Path]
+        - File path for the saved figure.
+    - bins: int, default 100
+        - Number of bins in the histogram.
+    - show_annots: bool, default False
+        - Whether to annotate each data point with its value.
+    - title: str, default 'Data Distribution'
+        - The title of the figure.
+    - axis_names: List, default ['Value', 'Frequency']
+        - The names of the x and y axes.
+    - bounds: Optional[List], default None
+        - Left and right bounds of the histogram x-axis. *Must be a list of length 2 if provided.*
+    - show_legend: bool, default True
+        - Whether to show the legend.
     """
     labels = list(data.keys())
     data = np.stack([ to_numpy(x) for x in data.values() ], axis=0)
@@ -35,7 +52,7 @@ def show_distribution(
     data = data.transpose(1, 0)  # (K, N)
     # Plot.
     plt.hist(data, bins=bins, alpha=0.7, label=labels)
-    if annotation:
+    if show_annots:
         for i in range(K):
             for j in range(N):
                 plt.text(data[i, j], 0, f'{data[i, j]:.2f}', va='bottom', fontsize=6)
@@ -53,18 +70,40 @@ def show_distribution(
 
 
 def show_history(
-    data        : Dict[str, Any],
-    fn          : Union[str, Path],                 # file name of the saved figure
-    data_pos    : Optional[Dict[int, Any]] = None,  # x values of the data.
-    annotation  : bool = False,
-    title       : str  = 'Data History',
-    axis_names  : List = ['Time', 'Value'],
-    ex_starts   : Dict[str, int] = {},  # starting points of the history if not starting from 0
-    show_legend : bool = True,
+    data         : Dict[str, Any],
+    fn           : Union[str, Path],
+    data_pos     : Optional[Dict[str, Any]] = None,
+    title        : str  = 'Data History',
+    axis_names   : List = ['Time', 'Value'],
+    ex_starts    : Dict[str, int] = {},
+    show_annots  : bool  = False,
+    show_legend  : bool  = True,
+    show_scatter : bool  = True,
 ):
     """
-    Visualize the value of changing across time.
-    The history should be a dictionary with keys as the metric names and values as the metric values.
+    Visualize one or more value series as lines in a single figure.
+    Multiple series in `data` are plotted together for comparison.
+
+    ### Args
+    - data: Dict[str, Any]
+        - A dictionary mapping series names to their values.
+    - fn: Union[str, Path]
+        - File path for the saved figure.
+    - data_pos: Optional[Dict[str, Any]], default None
+        - A dictionary mapping series names to their x positions.
+          If None, x positions are generated from `ex_starts` with step=1.
+    - title: str, default 'Data History'
+        - The title of the figure.
+    - axis_names: List, default ['Time', 'Value']
+        - The names of the x and y axes.
+    - ex_starts: Dict[str, int], default {}
+        - Starting x offset per series. *Only used when `data_pos` is None.*
+    - show_annots: bool, default False
+        - Whether to annotate each data point with its value.
+    - show_legend: bool, default True
+        - Whether to show the legend.
+    - show_scatter: bool, default True
+        - Whether to overlay scatter markers on data points.
     """
     # Make sure the fn's parent exists.
     if isinstance(fn, str):
@@ -85,8 +124,10 @@ def show_history(
     # Plot.
     for i in range(N):
         cur_data_pos = data_pos[history_name[i]]
-        plt.plot(cur_data_pos, history_data[i], label=history_name[i])
-    if annotation:
+        line, = plt.plot(cur_data_pos, history_data[i], label=history_name[i])
+        if show_scatter:
+            plt.scatter(cur_data_pos, history_data[i], s=10, color=line.get_color())
+    if show_annots:
         for i in range(N):
             if data_pos is None:
                 cur_data_pos = range(Ss[i], Ss[i]+Ls[i])
