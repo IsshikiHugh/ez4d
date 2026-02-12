@@ -22,7 +22,16 @@ def Rt_to_T(
     R : Union[torch.Tensor, np.ndarray],
     t : Union[torch.Tensor, np.ndarray],
 ):
-    """ Get (..., 4, 4) transformation matrix from (..., 3, 3) rotation matrix and (..., 3) translation vector. """
+    """ 
+    Get (..., 4, 4) transformation matrix from (..., 3, 3) rotation matrix and (..., 3) translation vector.
+
+    ### Args
+    - R: torch.Tensor, (..., 3, 3)
+    - t: torch.Tensor, (..., 3)
+
+    ### Returns
+    - T: torch.Tensor, (..., 4, 4)
+    """
     if isinstance(R, np.ndarray):
         R = torch.from_numpy(R).float()
     if isinstance(t, np.ndarray):
@@ -36,6 +45,43 @@ def Rt_to_T(
     T[..., :3, 3] = t
 
     return T
+
+def R_to_T(
+    R : Union[torch.Tensor, np.ndarray],
+):
+    """ 
+    Get (..., 4, 4) transformation matrix from (..., 3, 3) rotation matrix.
+
+    ### Args
+    - R: torch.Tensor, (..., 3, 3)
+
+    ### Returns
+    - T: torch.Tensor, (..., 4, 4)
+    """
+    if isinstance(R, np.ndarray):
+        R = torch.from_numpy(R).float()
+    assert R.shape[-2:] == (3, 3), f'R should be a (..., 3, 3) matrix, but R.shape = {R.shape}'
+    t = torch.zeros(R.shape[:-2] + (3,), device=R.device, dtype=R.dtype) # (..., 3)
+    return Rt_to_T(R, t)
+
+
+def t_to_T(
+    t : Union[torch.Tensor, np.ndarray],
+):
+    """ 
+    Get (..., 4, 4) transformation matrix from (..., 3) translation vector.
+
+    ### Args
+    - t: torch.Tensor, (..., 3)
+
+    ### Returns
+    - T: torch.Tensor, (..., 4, 4)
+    """
+    if isinstance(t, np.ndarray):
+        t = torch.from_numpy(t).float()
+    assert t.shape[-1] == 3, f't should be a (..., 3) vector, but t.shape = {t.shape}'
+    R = torch.eye(3, device=t.device, dtype=t.dtype).repeat(t.shape[:-1] + (1, 1)) # (..., 3, 3)
+    return Rt_to_T(R, t)
 
 
 def apply_Ts_on_pts(Ts:torch.Tensor, pts:torch.Tensor) -> torch.Tensor:
