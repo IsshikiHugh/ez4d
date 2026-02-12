@@ -7,7 +7,16 @@ from typing import Optional, Union
 def T_to_Rt(
     T : Union[torch.Tensor, np.ndarray],
 ):
-    """ Get (..., 3, 3) rotation matrix and (..., 3) translation vector from (..., 4, 4) transformation matrix. """
+    """ 
+    Get (..., 3, 3) rotation matrix and (..., 3) translation vector from (..., 4, 4) transformation matrix.
+
+    ### Args
+    - T: torch.Tensor, (..., 4, 4)
+
+    ### Returns
+    - R: torch.Tensor, (..., 3, 3)
+    - t: torch.Tensor, (..., 3)
+    """
     if isinstance(T, np.ndarray):
         T = torch.from_numpy(T).float()
     assert T.shape[-2:] == (4, 4), f'T.shape[-2:] = {T.shape[-2:]}'
