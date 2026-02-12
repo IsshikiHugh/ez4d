@@ -4,6 +4,8 @@ Provides methods to visualize the information of data, giving a brief overview i
 
 import torch
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')  # headless
 import matplotlib.pyplot as plt
 
 from typing import Optional, Union, List, Dict
@@ -112,7 +114,8 @@ def show_history(
 
     # Preparation.
     history_name = list(data.keys())
-    history_data = [ to_numpy(x) for x in data.values() ]
+    # Ensure data is numpy array for faster processing
+    history_data = [np.array(x) for x in data.values()]
     N = len(history_name)
     Ls = [len(x) for x in history_data]
     Ss = [
@@ -122,20 +125,36 @@ def show_history(
         ]
 
     # Plot.
+    # Pre-calculate figure to manage memory better
+    plt.figure()
+
     for i in range(N):
-        cur_data_pos = data_pos[history_name[i]]
-        line, = plt.plot(cur_data_pos, history_data[i], label=history_name[i])
-        if show_scatter:
-            plt.scatter(cur_data_pos, history_data[i], s=10, color=line.get_color())
+        # Determine X coordinates efficiently
+        if data_pos is None:
+            cur_data_pos = np.arange(Ss[i], Ss[i]+Ls[i])
+        else:
+            cur_data_pos = data_pos[history_name[i]]
+
+        plt.plot(
+            cur_data_pos,
+            history_data[i],
+            label      = history_name[i],
+            marker     = '.' if show_scatter else None,
+            markersize = 4,
+        )
+
     if show_annots:
         for i in range(N):
+            # Recalculate X only if needed (logic consistent with above)
             if data_pos is None:
-                cur_data_pos = range(Ss[i], Ss[i]+Ls[i])
+                cur_data_pos = np.arange(Ss[i], Ss[i]+Ls[i])
             else:
-                cur_data_pos = [data_pos[history_name[i]] for i in range(N)]
+                cur_data_pos = data_pos[history_name[i]]
+
             cur_history_data = history_data[i]
-            for j in range(Ls[i]):
-                plt.text(cur_data_pos[j], cur_history_data[j], f'{cur_history_data[j]:.2f}', fontsize=6)
+            # Use zip for slightly faster iteration
+            for x, y in zip(cur_data_pos, cur_history_data):
+                plt.text(x, y, f'{y:.2f}', fontsize=6)
 
     plt.title(title)
     plt.xlabel(axis_names[0])
