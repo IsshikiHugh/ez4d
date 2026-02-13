@@ -1,5 +1,6 @@
 import imageio
 import numpy as np
+import ffmpeg
 
 from tqdm import tqdm
 from typing import Union, List, Optional
@@ -49,7 +50,32 @@ def save_img(
 
     imageio.v3.imwrite(output_path, img, **kwargs)
 
+def load_video_meta(video_path: Union[str, Path]) -> dict:
+    video_path = str(video_path)
+    assert Path(video_path).exists(), f'Video not found: {video_path}'
 
+    probe = ffmpeg.probe(str(video_path))
+    video_stream = next((s for s in probe['streams'] if s['codec_type'] == 'video'), None)
+
+    assert video_stream is not None, f"No video stream found in {video_path}"
+
+    num, den = map(int, video_stream['r_frame_rate'].split('/'))
+    fps = num / den if den != 0 else 0
+
+    if 'nb_frames' in video_stream:
+        L = int(video_stream['nb_frames'])
+    else:
+        L = int(float(video_stream['duration']) * fps)
+
+    return {
+        'fps'     : fps,
+        'w'       : int(video_stream['width']),
+        'h'       : int(video_stream['height']),
+        'L'       : L,
+        'sid'     : 0,
+        'eid'     : L,
+        'total_L' : L,
+    }
 def load_video(
     video_path : Union[str, Path],
     sid        : Optional[int] = None,
