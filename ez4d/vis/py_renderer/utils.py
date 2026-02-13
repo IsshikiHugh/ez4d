@@ -2,7 +2,7 @@ import numpy as np
 import pyrender
 
 from typing import List, Optional, Union, Tuple
-from lib.utils.data import to_numpy
+from ...data import to_numpy
 
 
 def create_camera(K4:List, Rt:Optional[Tuple]):
