@@ -21,8 +21,8 @@ def T_to_Rt(
         T = torch.from_numpy(T).float()
     assert T.shape[-2:] == (4, 4), f'T.shape[-2:] = {T.shape[-2:]}'
 
-    R = T[..., :3, :3]
-    t = T[..., :3, 3]
+    R = T[..., :3, :3].clone()
+    t = T[..., :3, 3].clone()
 
     return R, t
 
@@ -50,8 +50,8 @@ def Rt_to_T(
     assert R.shape[:-2] == t.shape[:-1], f'R and t should have the same shape prefix but {R.shape[:-2]} != {t.shape[:-1]}'
 
     T = torch.eye(4, device=R.device, dtype=R.dtype).repeat(R.shape[:-2] + (1, 1)) # (..., 4, 4)
-    T[..., :3, :3] = R
-    T[..., :3, 3] = t
+    T[..., :3, :3] = R.clone()
+    T[..., :3, 3] = t.clone()
 
     return T
 
@@ -105,8 +105,8 @@ def apply_Ts_on_pts(Ts:torch.Tensor, pts:torch.Tensor) -> torch.Tensor:
     assert Ts.shape[-2:] == (4, 4), f'Shape of Ts should be (..., 4, 4) but {Ts.shape}'
     assert Ts.device == pts.device, f'Device of Ts and pts should be the same but {Ts.device} != {pts.device}'
 
-    R = Ts[..., :3, :3]  # (...B, 3, 3)
-    t = Ts[..., :3, 3]   # (...B, 3)
+    R = Ts[..., :3, :3].clone()  # (...B, 3, 3)
+    t = Ts[..., :3, 3].clone()   # (...B, 3)
     ret_pts = torch.einsum('...ij,...nj->...ni', R, pts) + t[..., None, :]
 
     return ret_pts
