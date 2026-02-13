@@ -75,6 +75,7 @@ def annotate_video(
     else:
         offset = pos
 
+    scale = 1.0 if scale is None else scale
     for i, frame in enumerate(frames):
         overlay = frame.copy()
         _put_text(overlay, text, offset, scale=scale)
