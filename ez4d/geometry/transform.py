@@ -128,7 +128,7 @@ def apply_T_on_pts(T:torch.Tensor, pts:torch.Tensor) -> torch.Tensor:
     return ret.squeeze(0) if unbatched else ret
 
 
-def align_pcl(Y: torch.Tensor, X: torch.Tensor, weight=None, fixed_scale=False):
+def align_pcl(X: torch.Tensor, Y: torch.Tensor, weight=None, fixed_scale=False):
     """
     Align similarity transform to align X with Y using umeyama method. X' = s * R * X + t is aligned with Y.
 
