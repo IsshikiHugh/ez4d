@@ -24,6 +24,7 @@ def first_k_frames_align_to(
     S1  : torch.Tensor,
     S2  : torch.Tensor,
     k_f : int,
+    fixed_scale : bool = False,
 ):
     """
     Compute the transformation between the first trajectory segment of S1 and S2, and use
@@ -36,7 +37,9 @@ def first_k_frames_align_to(
     - `S2`: torch.Tensor, shape (..., L, N, 3)
     - `k_f`: int
         - The number of frames to use for alignment.
-
+    - `fixed_scale`: bool, default = False
+        - Whether to fix the scale of the transformation.
+        
     ### Returns
     - `S1_aligned`: torch.Tensor, shape (..., L, N, 3)
         - The aligned S1.
@@ -56,6 +59,7 @@ def first_k_frames_align_to(
     s_first, R_first, t_first = align_pcl(
             X = S1_first,
             Y = S2_first,
+            fixed_scale = fixed_scale,
         )  # (B, 1), (B, 3, 3), (B, 3)
     s_first = s_first.reshape(B, 1, 1, 1)  # (B, 1, 1, 1)
     t_first = t_first.reshape(B, 1, 1, 3)  # (B, 1, 1, 3)
