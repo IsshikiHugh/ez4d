@@ -79,7 +79,12 @@ def flex_resize_video(
     if tgt_w == orig_w and tgt_h == orig_h:
         resized_frames = frames  # skip for efficiency
     else:
-        resized_frames = np.stack([cv2.resize(frame, (tgt_w, tgt_h)) for frame in frames])
+        # Pre-allocate to avoid intermediate list and double memory usage.
+        resized_first_frame = cv2.resize(frames[0], (tgt_w, tgt_h))
+        resized_frames = np.empty((frames.shape[0], tgt_h, tgt_w, *resized_first_frame.shape[2:]), dtype=resized_first_frame.dtype)
+        resized_frames[0] = resized_first_frame
+        for i in range(1, frames.shape[0]):
+            resized_frames[i] = cv2.resize(frames[i], (tgt_w, tgt_h))
 
     return resized_frames
 
