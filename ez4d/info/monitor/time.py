@@ -50,6 +50,7 @@ class TimeMonitor:
 
     def __init__(self, log_folder:Optional[Union[str, Path]]=None, record_birth_block:bool=False):
         self._closed = False
+        self._cuda_available = 'torch' in sys.modules and __import__('torch').cuda.is_available()
         if log_folder is not None:
             self.log_folder = Path(log_folder) if isinstance(log_folder, str) else log_folder
             self.log_folder.mkdir(parents=True, exist_ok=True)
@@ -184,10 +185,9 @@ class TimeMonitor:
 
     def _tick_record(self, caller_frame, desc:Optional[str]=''):
         # 1. Generate the record.
-        if 'torch' in sys.modules:
+        if self._cuda_available:
             import torch
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
+            torch.cuda.synchronize()
         timestamp = time.time()
         readable_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))
         position = summary_frame_info(caller_frame)
