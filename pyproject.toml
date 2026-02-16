@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ez4d"
+dynamic = ["version"]
+description = "EZ4D - Easy 4D processing library"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    { name = "Yan Xia", email = "yan.xia@utexas.edu" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    # Core
+    "torch>=1.9.0",
+    "numpy>=1.19.0",
+    # Visualization
+    "wis3d",
+    "trimesh",
+    "opencv-python",
+    "imageio",
+    "imageio-ffmpeg",
+    "matplotlib",
+    "pillow",
+    # Utilities
+    "tqdm",
+    "einops",
+    "colorlog",
+    "rich",
+]
+
+[project.optional-dependencies]
+pytorch3d = ["pytorch3d"]
+pyrender = ["pyrender"]
+decord = ["decord"]
+
+[project.urls]
+Homepage = "https://github.com/IsshikiHugh/ez4d"
+
+[tool.setuptools.dynamic]
+version = {attr = "ez4d.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["ez4d*"]
