@@ -49,6 +49,7 @@ class TimeMonitor:
     '''
 
     def __init__(self, log_folder:Optional[Union[str, Path]]=None, record_birth_block:bool=False):
+        self._closed = False
         if log_folder is not None:
             self.log_folder = Path(log_folder) if isinstance(log_folder, str) else log_folder
             self.log_folder.mkdir(parents=True, exist_ok=True)
@@ -226,7 +227,12 @@ class TimeMonitor:
         return msg
 
 
-    def _die_hook(self):
+    def close(self):
+        ''' Explicitly close the monitor, flushing data and closing the log file. '''
+        if getattr(self, '_closed', False):
+            return
+        self._closed = True
+
         if self.record_birth_block:
             self.__exit__(None, None, None)
 
@@ -234,3 +240,12 @@ class TimeMonitor:
 
         if self.log_folder is not None:
             self.log_fh.close()
+
+
+    def __del__(self):
+        ''' Safety net: close the log file if not already closed. '''
+        self.close()
+
+
+    def _die_hook(self):
+        self.close()
