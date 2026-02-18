@@ -568,3 +568,12 @@ def quat_xyzw_to_wxyz(quat: torch.Tensor) -> torch.Tensor:
         Converted quaternions as tensor of shape (..., 4).
     """
     return quat[..., [3, 0, 1, 2]]
+
+
+@torch.jit.script_if_tracing
+def quat_xyzw_to_p3d(quat: torch.Tensor) -> torch.Tensor:
+    return quat_xyzw_to_wxyz(quat)
+
+@torch.jit.script_if_tracing
+def quat_wxyz_to_p3d(quat: torch.Tensor) -> torch.Tensor:
+    return quat
