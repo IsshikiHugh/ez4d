@@ -104,6 +104,7 @@ def load_video(
         frames = []
         for img_path in tqdm(imgs_path, disable=silent):
             frames.append(imageio.imread(img_path))
+        frames = np.stack(frames, axis=0) # (L, H, W, 3)
         fps = 30 # default fps
     else:
         if not silent:
@@ -141,7 +142,6 @@ def load_video(
                 frames.append(reader.get_next_data())
             frames = np.stack(frames, axis=0)
             fps = reader.get_meta_data()['fps']
-    frames = np.stack(frames, axis=0) # (L, H, W, 3)
     meta = {
         'fps'     : fps,
         'w'       : frames.shape[2],

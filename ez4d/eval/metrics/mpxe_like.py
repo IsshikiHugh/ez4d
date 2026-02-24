@@ -77,7 +77,7 @@ def eval_PA_MPxE(
     # Perform Procrustes alignment.
     pd_aligned = similarity_align_to(pd, gt) # (...B, N, 3)
     # Calculate the PA-MPxE
-    return eval_MPxE(pd_aligned, gt, scale) # (...B,)
+    return eval_MPxE(pd_aligned, gt, scale, root_id=None) # (...B,)
 
 
 def eval_Wk_MPxE(

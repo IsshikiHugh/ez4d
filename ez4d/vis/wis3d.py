@@ -232,10 +232,11 @@ class HWis3D(Wis3D):
 
     def add_vec_seq(
         self,
-        vecs    : torch.Tensor,
-        name    : str,
-        offset  : int = 0,
-        seg_num : int = 16,
+        vecs      : torch.Tensor,
+        name      : str,
+        offset    : int = 0,
+        seg_num   : int = 16,
+        thickness : float = 0.01,
     ):
         """
         Add directional line sequence to the wis3d viewer.
@@ -251,6 +252,8 @@ class HWis3D(Wis3D):
             - The offset for the sequence index.
         - seg_num: int, default = 16
             - The number of segments for gradient color, will just change the visualization effect.
+        - thickness: float, default = 0.01
+            - The thickness of the line.
         """
         if len(vecs.shape) == 3:
             vecs = vecs[:, None, :, :] # (L, 2, 3) -> (L, 1, 2, 3)
@@ -278,6 +281,7 @@ class HWis3D(Wis3D):
                 start_points = start_pts[i].reshape(-1, 3),
                 end_points   = end_pts[i].reshape(-1, 3),
                 colors       = grad_colors.reshape(-1, 3),
+                thickness    = thickness,
                 name         = name,
             )
 
