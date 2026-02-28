@@ -185,6 +185,7 @@ class HWis3D(Wis3D):
         - bones: list
             - A list of bones of the skeleton, i.e. the edge in the kinematic trees.
         - colors: list
+            - The color of the skeleton, values in [0, 255].
         - name: str
             - The name of the point cloud.
         - offset: int, default = 0
