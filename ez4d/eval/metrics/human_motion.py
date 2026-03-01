@@ -42,14 +42,14 @@ def eval_RTE(pd_trans, gt_trans, scale=1e2):
     return normalized_rte * scale
 
 
-def eval_Jitter(joints, fps=30, scale=0.1):
+def eval_Jitter(joints, fps, scale=0.1):
     """
     Compute the jitter of the motion. 
     The jitter refers to the delta of the linear acceleration of the joints.
     ### Args
     - `joints`: torch.Tensor, (..., L, J, 3), where L is the length of the sequence
         - The 3D joints positions in global coordinates.
-    - `fps`: float, default = 30
+    - `fps`: float
         - The frame rate of the sequence.
     - `scale`: float, default = 0.1
         - Default value ref: https://github.com/zju3dv/GVHMR/blob/088caff492aa38c2d82cea363b78a3c65a83118f/hmr4d/utils/eval/eval_utils.py#L326
@@ -100,3 +100,44 @@ def eval_FS_SMPL(gt, pd, thr=1e-2, scale=m2mm):
     unexcepted_feet_disp = pd_feet_disp[static_label]  # feet disp of feet supposed to be static
 
     return unexcepted_feet_disp * scale
+
+
+def eval_Accel(joints_gt, joints_pred, fps, mask=None):
+    """
+    Compute the acceleration error of the joints (torch version).
+    Use [i-1, i, i+1] to compute acc at frame_i. The acceleration error:
+        1/(n-2) \sum_{i=1}^{n-1} X_{i-1} - 2X_i + X_{i+1}
+    Note that for each frame that is not visible, three entries(-1, 0, +1) in the
+    acceleration error will be zero'd out.
+    ### Args
+    - `joints_gt`: torch.Tensor, (..., L, J, 3), where L is the length of the sequence
+        - The ground truth joints.
+    - `joints_pred`: torch.Tensor, (..., L, J, 3), where L is the length of the sequence
+        - The predicted joints.
+    - `fps`: float
+        - The frame rate of the sequence.
+    - `mask`: torch.Tensor, (..., L), default = None
+        - The mask of the sequence.
+        - If None, all frames are considered visible.
+    ### Returns
+    - torch.Tensor, (..., L-2)
+        - The acceleration error.
+    """
+    accel_gt = joints_gt[:-2] - 2 * joints_gt[1:-1] + joints_gt[2:]
+    accel_pred = joints_pred[:-2] - 2 * joints_pred[1:-1] + joints_pred[2:]
+    normed = torch.norm(accel_pred - accel_gt, dim=-1).mean(dim=-1)
+    if fps is not None:
+        normed = normed * fps**2
+
+    if mask is None:
+        new_vis = torch.ones(len(normed), dtype=torch.bool, device=normed.device)
+    else:
+        invis = ~mask
+        invis1 = torch.roll(invis, -1)
+        invis2 = torch.roll(invis, -2)
+        new_invis = (invis | invis1 | invis2)[:-2]
+        new_vis = ~new_invis
+        if new_vis.sum() == 0:
+            print("Warning!!! no valid acceleration error to compute.")
+
+    return normed[new_vis]
