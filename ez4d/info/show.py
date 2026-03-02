@@ -70,6 +70,73 @@ def show_distribution(
     plt.close()
 
 
+def show_performance(
+    data        : Dict[str, Any],
+    fn          : Union[str, Path],
+    title       : str  = 'Performance',
+    axis_names  : List = ['Value', 'Method'],
+    show_annots : bool = True,
+    show_legend : bool = False,
+    bounds      : Optional[List] = None,
+    fmt         : str  = '.2f',
+):
+    """
+    Visualize performance comparison across methods using a horizontal bar chart.
+    Each entry in `data` is drawn as one horizontal bar.
+
+    ### Args
+    - data: Dict[str, Any]
+        - A dictionary mapping method/experiment names to their scalar performance values.
+    - fn: Union[str, Path]
+        - File path for the saved figure.
+    - title: str, default 'Performance'
+        - The title of the chart.
+    - axis_names: List, default ['Value', 'Method']
+        - The names of the x and y axes.
+    - show_annots: bool, default True
+        - Whether to annotate each bar with its value.
+    - show_legend: bool, default False
+        - Whether to show the legend.
+    - bounds: Optional[List], default None
+        - Left and right bounds of the x-axis. *Must be a list of length 2 if provided.*
+    - fmt: str, default '.2f'
+        - Format string for value annotations.
+    """
+    assert bounds is None or len(bounds) == 2, f"Bounds should be a list of length 2, but got {bounds}."
+
+    if isinstance(fn, str):
+        fn = Path(fn)
+    fn.parent.mkdir(parents=True, exist_ok=True)
+
+    labels = list(data.keys())
+    values = to_numpy([v for v in data.values()])
+
+    plt.figure(figsize=(8, max(2, 0.5 * len(labels))))
+    ax = plt.gca()
+
+    y_pos = np.arange(len(labels))
+    for i, (label, v) in enumerate(zip(labels, values)):
+        ax.barh(i, v, align='center', alpha=0.8, label=label)
+        if show_annots:
+            ax.text(v, i, f' {v:{fmt}}', va='center', fontsize=8)
+
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(labels)
+    ax.invert_yaxis()
+    ax.set_title(title)
+    ax.set_xlabel(axis_names[0])
+    ax.set_ylabel(axis_names[1])
+
+    if bounds:
+        ax.set_xlim(bounds)
+
+    if show_legend:
+        ax.legend()
+
+    plt.tight_layout()
+    plt.savefig(fn, dpi=150, bbox_inches='tight')
+    plt.close()
+
 
 def show_history(
     data         : Dict[str, Any],
