@@ -90,7 +90,7 @@ def setup_camera(K4, resolution):
     return cam_obj
 
 
-def setup_render_settings(mode: str):
+def setup_render_settings(mode: str, world_strength: float = 0.35):
     """Configure output format and transparency."""
     scene = bpy.context.scene
     scene.render.image_settings.file_format = 'PNG'
@@ -105,6 +105,14 @@ def setup_render_settings(mode: str):
     if mode == 'overlay':
         scene.render.film_transparent = True
         scene.render.image_settings.color_mode = 'RGBA'
+        # film_transparent hides the world from the output but world light
+        # still contributes to scene illumination — use it as an ambient
+        # fill so faces grazing the camera-origin point light aren't black.
+        scene.world = bpy.data.worlds.new('World')
+        scene.world.use_nodes = True
+        bg_node = scene.world.node_tree.nodes['Background']
+        bg_node.inputs['Color'].default_value = (1.0, 1.0, 1.0, 1.0)
+        bg_node.inputs['Strength'].default_value = float(world_strength)
     else:
         scene.render.film_transparent = False
         scene.render.image_settings.color_mode = 'RGB'
@@ -117,25 +125,26 @@ def setup_render_settings(mode: str):
 
 # ---- Lighting -------------------------------------------------------------
 
-def setup_lights_overlay():
-    """Three-point lighting for overlay mode (similar to Raymond lights)."""
-    key_data = bpy.data.lights.new('KeyLight', type='SUN')
-    key_data.energy = 3.0
-    key_obj = bpy.data.objects.new('KeyLight', key_data)
-    bpy.context.scene.collection.objects.link(key_obj)
-    key_obj.rotation_euler = (0.8, 0.0, -0.5)
+def setup_lights_overlay(cam_obj, sun_energy: float = 2.0,
+                         sun_direction=(-0.3, -0.5, -1.0)):
+    """Off-axis SUN parented to camera (no distance falloff).
 
-    fill_data = bpy.data.lights.new('FillLight', type='SUN')
-    fill_data.energy = 1.5
-    fill_obj = bpy.data.objects.new('FillLight', fill_data)
-    bpy.context.scene.collection.objects.link(fill_obj)
-    fill_obj.rotation_euler = (0.8, 0.0, 2.6)
-
-    rim_data = bpy.data.lights.new('RimLight', type='SUN')
-    rim_data.energy = 1.0
-    rim_obj = bpy.data.objects.new('RimLight', rim_data)
-    bpy.context.scene.collection.objects.link(rim_obj)
-    rim_obj.rotation_euler = (-0.3, 0.0, 1.5)
+    World background gives ambient fill. A SUN emits parallel rays in its
+    local -Z direction; parented to the camera, its direction tracks the
+    view, so brightness on the subject is independent of depth (unlike
+    POINT, which has 1/r² falloff). Local rotation offsets the beam from
+    the view axis so face Lambert factors vary across orientations.
+    """
+    data = bpy.data.lights.new('CameraLight', type='SUN')
+    data.energy = float(sun_energy)
+    obj = bpy.data.objects.new('CameraLight', data)
+    bpy.context.scene.collection.objects.link(obj)
+    obj.parent = cam_obj
+    # Aim the beam down-left-and-forward in camera-local frame so the
+    # subject's upper-right face is brightest (key-light direction).
+    from mathutils import Vector
+    target_dir = Vector(tuple(sun_direction)).normalized()
+    obj.rotation_euler = target_dir.to_track_quat('-Z', 'Y').to_euler()
 
 
 def setup_lights_ground(light_position):
@@ -185,13 +194,25 @@ def create_mesh_object(name, faces, verts_frame0, color):
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes['Principled BSDF']
     bsdf.inputs['Base Color'].default_value = (*color, 1.0)
-    bsdf.inputs['Roughness'].default_value = 0.5
+    bsdf.inputs['Roughness'].default_value = 0.9
     bsdf.inputs['Metallic'].default_value = 0.0
+    # Knock down specular reflection for a matte / satin look. Input is
+    # 'Specular IOR Level' on Blender 4.x, 'Specular' on 3.x.
+    for spec_name in ('Specular IOR Level', 'Specular'):
+        if spec_name in bsdf.inputs:
+            bsdf.inputs[spec_name].default_value = 0.15
+            break
     obj.data.materials.append(mat)
 
-    # Enable smooth shading
+    # Auto-smooth: keep smooth shading across gentle curvature (e.g. body
+    # surfaces with shared verts), but flat-shade across sharp edges
+    # (e.g. cube corners) to avoid Phong-interpolation artifacts.
+    import math
     for poly in mesh.polygons:
         poly.use_smooth = True
+    if hasattr(mesh, 'use_auto_smooth'):
+        mesh.use_auto_smooth = True
+        mesh.auto_smooth_angle = math.radians(60.0)
 
     return obj
 
@@ -311,17 +332,23 @@ def main():
     resolution = params['resolution']       # [W, H]
     num_frames = params['num_frames']
 
+    lighting_cfg = params.get('lighting', {}) or {}
+
     # -- Scene setup --
     clear_scene()
     setup_engine(engine, samples, use_gpu)
     cam_obj = setup_camera(K4, resolution)
-    setup_render_settings(mode)
+    setup_render_settings(mode, world_strength=lighting_cfg.get('world_strength', 0.35))
 
     # -- Lighting --
     point_light_obj = None
     light_positions = None
     if mode == 'overlay':
-        setup_lights_overlay()
+        setup_lights_overlay(
+            cam_obj,
+            sun_energy=lighting_cfg.get('sun_energy', 2.0),
+            sun_direction=lighting_cfg.get('sun_direction', (-0.3, -0.5, -1.0)),
+        )
     else:
         light_positions = np.asarray(params['light_positions'], dtype=np.float64)  # (L, 3)
         assert light_positions.shape[0] == num_frames, (

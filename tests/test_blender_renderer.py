@@ -236,21 +236,24 @@ def test_bypass_render(**kw):
 # ---------------------------------------------------------------------------
 
 def main():
+    default_device = 'cuda' if torch.cuda.is_available() else 'cpu'
     parser = argparse.ArgumentParser(description='Test blender_renderer')
     parser.add_argument('--engine', default='BLENDER_EEVEE',
                         help='Render engine: CYCLES or BLENDER_EEVEE (default: BLENDER_EEVEE)')
     parser.add_argument('--samples', type=int, default=16,
                         help='Render samples (default: 16 for fast testing)')
+    parser.add_argument('--device', default=default_device,
+                        help=f'Torch device for camera math (default: {default_device})')
     parser.add_argument('--output-dir', default='/tmp/test_blender_renderer',
                         help='Directory for test outputs')
     args = parser.parse_args()
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    kw = dict(engine=args.engine, samples=args.samples)
+    kw = dict(engine=args.engine, samples=args.samples, device=args.device)
 
     print(f'Output dir: {out_dir}')
-    print(f'Engine: {args.engine}, Samples: {args.samples}')
+    print(f'Engine: {args.engine}, Samples: {args.samples}, Device: {args.device}')
     print()
 
     tests = [

@@ -52,6 +52,15 @@ def _c2ws_to_torch3d_Rt(camera_c2ws: np.ndarray, device: str) -> Tuple[torch.Ten
     return R_out, t_out
 
 
+DEFAULT_OVERLAY_LIGHTING = {
+    # World ambient (omnidirectional fill).
+    'world_strength' : 0.35,           # 0 = no ambient; ~1.0 starts to wash out.
+    # Camera-parented SUN: parallel rays, depth-independent brightness.
+    'sun_energy'     : 2.0,            # W/m² of irradiance.
+    'sun_direction'  : (-0.3, -0.5, -1.0),  # Camera-local; SUN -Z aligns to this.
+}
+
+
 def render_mesh_overlay_img(
     faces       : Union[torch.Tensor, np.ndarray],
     verts       : torch.Tensor,
@@ -62,11 +71,13 @@ def render_mesh_overlay_img(
     resize      : float = 1.0,
     Rt          : Optional[Tuple[torch.Tensor]] = None,
     mesh_color  : Optional[Union[List[float], str]] = 'blue',
+    lighting    : Optional[dict] = None,
     **kwargs,
 ) -> Any:
     """Render the mesh overlay on a single image.
 
-    API-compatible with ``p3d_renderer.render_mesh_overlay_img``.
+    API-compatible with ``p3d_renderer.render_mesh_overlay_img``. See
+    ``render_mesh_overlay_video`` for the ``lighting`` dict keys.
     """
     frame = render_mesh_overlay_video(
         faces      = faces,
@@ -77,6 +88,7 @@ def render_mesh_overlay_img(
         resize     = resize,
         Rt         = Rt,
         mesh_color = mesh_color,
+        lighting   = lighting,
         **kwargs,
     )[0]
 
@@ -96,6 +108,7 @@ def render_mesh_overlay_video(
     resize     : float = 1.0,
     Rt         : Tuple = None,
     mesh_color : Optional[Union[List[float], str]] = 'blue',
+    lighting   : Optional[dict] = None,
     **kwargs,
 ) -> Any:
     """Render the mesh overlay on video frames.
@@ -112,6 +125,17 @@ def render_mesh_overlay_video(
         Override path to the Blender binary.
     timeout : int
         Blender subprocess timeout in seconds (default 600).
+
+    Lighting
+    --------
+    Pass ``lighting`` as a dict to override any of these defaults
+    (``DEFAULT_OVERLAY_LIGHTING``); unspecified keys keep their defaults:
+
+    - ``world_strength`` (float): omnidirectional ambient fill intensity.
+    - ``sun_energy`` (float): camera-parented SUN irradiance, W/m².
+    - ``sun_direction`` (tuple of 3 floats): camera-local direction the
+      SUN's beam travels — e.g. ``(-0.3, -0.5, -1.0)`` casts light from
+      upper-right of the camera toward subject's lower-left.
     """
     faces = to_numpy(faces)
     verts = to_numpy(verts)
@@ -132,7 +156,13 @@ def render_mesh_overlay_video(
 
     mesh_color = _resolve_color(mesh_color)
 
-    Rt_c2ws = _Rt_to_blender_c2ws(Rt[0], Rt[1], L) if Rt is not None else None
+    if Rt is not None:
+        Rt_c2ws = _Rt_to_blender_c2ws(Rt[0], Rt[1], L)
+    else:
+        # Match p3d_renderer default: (R=I, t=0) under PyTorch3D's +Z-forward
+        # convention. A raw Blender identity matrix would put the camera
+        # looking down -Z and hide meshes placed at +Z.
+        Rt_c2ws = _Rt_to_blender_c2ws(np.eye(3, dtype=np.float32), np.zeros(3, dtype=np.float32), L)
 
     renderer = BlenderRenderer(
         blender_exec=kwargs.get('blender_exec'),
@@ -142,6 +172,11 @@ def render_mesh_overlay_video(
         timeout=kwargs.get('timeout', 600),
     )
 
+    merged_lighting = {**DEFAULT_OVERLAY_LIGHTING, **(lighting or {})}
+    # JSON can't carry tuples; normalize sun_direction to a list.
+    if 'sun_direction' in merged_lighting:
+        merged_lighting['sun_direction'] = list(merged_lighting['sun_direction'])
+
     result = renderer.render_overlay(
         faces=faces,
         verts=verts,
@@ -150,6 +185,7 @@ def render_mesh_overlay_video(
         Rt_c2ws=Rt_c2ws,
         mesh_color=mesh_color,
         resize=resize,
+        lighting=merged_lighting,
     )
 
     if output_fn is not None:

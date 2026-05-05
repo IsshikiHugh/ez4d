@@ -62,6 +62,7 @@ class BlenderRenderer:
         Rt_c2ws: Optional[np.ndarray],
         mesh_color: List[float],
         resize: float,
+        lighting: Optional[dict] = None,
     ) -> np.ndarray:
         """Render mesh overlaid on background frames.
 
@@ -74,6 +75,8 @@ class BlenderRenderer:
         Rt_c2ws : (L, 4, 4) Blender c2w matrices, or None for identity
         mesh_color : [r, g, b] linear floats in [0, 1]
         resize : resize factor (applied after compositing)
+        lighting : optional dict overriding overlay light defaults; keys
+            ``world_strength``, ``sun_energy``, ``sun_direction``.
 
         Returns
         -------
@@ -102,6 +105,7 @@ class BlenderRenderer:
                 'mesh_npz_paths': [mesh_npz],
                 'mesh_colors': [list(map(float, mesh_color))],
                 'camera_Rt': camera_Rt,
+                'lighting': lighting or {},
             }
 
             params_path = str(tmpdir / 'params.json')
